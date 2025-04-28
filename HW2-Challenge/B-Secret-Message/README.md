@@ -21,10 +21,11 @@ Can you decipher the secret message and unlock the treasure chest?
 - The first line contains two integers `N` and `M` — the number of rows and columns respectively.
 - The next `N` lines each contain a string of `M` lowercase letters representing the grid.
 
-**Constraints:**
-- \( 1 \leq N \leq 6 \)
-- \( 1 \leq M \leq 5 \)
-- Each character is a lowercase English letter ('a' to 'z').
+## Constraints
+
+- \( N \) is an integer such that \( 1 \leq N \leq 6 \).
+- \( M \) is an integer such that \( 1 \leq M \leq 5 \).
+- Each character is a lowercase English letter from `'a'` to `'z'`.
 
 ---
 

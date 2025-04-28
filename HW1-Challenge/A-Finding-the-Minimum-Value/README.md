@@ -10,9 +10,9 @@
 
 Your task for this problem is very simple: you are going to find the minimum value for the function:
 
-\[
+$$
 f(x) = \frac{x^2}{\ln{x}} + a \cdot x
-\]
+$$
 
 in the range \(1 < x < 2\), where \(a\) is a real number that will be provided in the problem.
 
