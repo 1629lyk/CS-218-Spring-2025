@@ -60,4 +60,3 @@ The output only contains one integer, which is the largest credit you can get.
 | 5 1                |                     |
 | 8 2                |                     |
 | 2 4                |                     |
-```
