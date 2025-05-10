@@ -10,16 +10,16 @@ There are `n` courses in total. The `i`-th course has credit `ci` (labeled from 
 
 For any student, the maximum number of courses to enroll in is `m`. You want to maximize the total credit you can get by selecting `m` courses while not violating the prerequisite rule. Below is an example.
 
-```
 
-Course id    Prerequisite course    Credit
-1            none                   1
-2            1                      1
-3            2                      3
-4            none                   3
-5            2                      4
+| **Course ID** | **Prerequisite Course** | **Credit** |
+|-----------|---------------------|--------|
+| 1         | none                | 1      |
+| 2         | 1                   | 1      |
+| 3         | 2                   | 3      |
+| 4         | none                | 3      |
+| 5         | 2                   | 4      |
 
-```
+
 
 ## Input
 
