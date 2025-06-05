@@ -1,56 +1,127 @@
+"""
+Understanding the Problem:
+
+We are given a string of ski tricks (characters from 'a' to 'z') 
+that represent a sequence of actions a skier may or may not perform.
+
+The objective is to find the maximum number of tricks in a 
+contiguous subsequence that matches a given regular expression.
+
+The regex can include:
+- Letters a-z: match specific tricks
+- ?: match any trick
+- [abc]: match any one of the listed characters
+- *: zero or more repetitions of the preceding token
+- (expr)*: zero or more repetitions of a grouped expression
+
+This is essentially regex pattern matching with maximum-length matching, 
+where we may skip any character in the input string.
+
+Solution Strategy:
+
+To solve this, we:
+1. Parse the regular expression into a list of tokens:
+   Each token could be:
+   - A character (e.g., 'a')
+   - A wildcard '?'
+   - A character set (e.g., [abc])
+   - A grouped expression (e.g., (ab?)*)
+
+2. Build a Non-deterministic Finite Automaton (NFA) from these tokens
+   using Thompson's construction:
+   - Create start/end states for each token.
+   - Concatenate fragments sequentially.
+   - Handle * by creating e-transitions allowing repetition.
+   - Ensure full e-closure from start to accept states.
+
+3. Precompute e-closures for all NFA states:
+   - This gives the set of states reachable from a given state 
+     using only e-transitions.
+
+4. Dynamic Programming on the input string:
+   - Let dp[u] represent the maximum tricks matched reaching NFA state u.
+   - For each character in the trick string:
+     - Option 1: skip it (carry over dp)
+     - Option 2: match it against valid transitions
+     - Apply e-closures to all transitions
+
+5. Final Answer:
+   - Return the maximum value in dp for all states in the e-closure 
+     of the accept state.
+   - If no such value is valid (i.e., all are negative), return -1.
+
+Time and Space Complexity:
+
+- Each NFA has O(m) states where m = len(pattern)
+- DP runs in O(n * m * k), where n = len(string), k = average transitions per state
+- Efficient for input sizes up to 10^3
+
+Design Benefits:
+
+- Handles complex regex features while ensuring correctness
+- Modular structure for parsing, automaton construction, and evaluation
+- Uses E-closure to simulate repetition and grouping efficiently
+
+References:
+1. https://en.wikipedia.org/wiki/Thompson%27s_construction
+2. https://www.geeksforgeeks.org/regular-expression-to-nfa/
+3. https://cp-algorithms.com/string/string-hashing.html
+"""
+
 import sys
 import collections
-sys.setrecursionlimit(10**7)
+
+NEG_INF = -10 ** 9
+
 
 def parse_pattern(p):
-    """
-    Parse p into a list of tokens of the form
-      (typ, value, starred)
-    where typ ∈ {'char','any','set','group'},
-    value is either a character, None, a set of chars,
-    or a sub‐list of tokens (for 'group'),
-    and starred==True iff followed by '*'.
-    """
+    
     def _parse(i, end_char):
         tokens = []
         while i < len(p):
             ch = p[i]
+            
             if end_char and ch == end_char:
                 break
+            
             if ch == '(':
                 # parse inside parentheses up to ')'
                 inner, j = _parse(i+1, ')')
                 # j is index of ')'
                 starred = (j+1 < len(p) and p[j+1] == '*')
+            
                 tokens.append(('group', inner, starred))
                 i = j+2 if starred else j+1
+            
             elif ch == '[':
                 k = p.find(']', i+1)
                 charset = set(p[i+1:k])
+                
                 starred = (k+1 < len(p) and p[k+1] == '*')
                 tokens.append(('set', charset, starred))
                 i = k+2 if starred else k+1
+            
+            
             elif ch == '?':
                 starred = (i+1 < len(p) and p[i+1] == '*')
                 tokens.append(('any', None, starred))
                 i += 2 if starred else 1
+            
             else:
                 # a–z
                 starred = (i+1 < len(p) and p[i+1] == '*')
                 tokens.append(('char', ch, starred))
                 i += 2 if starred else 1
+        
+        
         return tokens, i
+    
+    
     toks, _ = _parse(0, None)
     return toks
 
 def build_nfa(tokens):
-    """
-    Build an NFA from the token list via Thompson's construction.
-    Returns:
-      eps_list   : list of lists, eps_list[u] = states reachable by ε from u
-      trans_list : list of lists, trans_list[u] = [(v,cond_set),...]
-      start, accept, num_states
-    """
+    
     eps = collections.defaultdict(list)
     trans = collections.defaultdict(list)
     next_state = 0
@@ -102,6 +173,8 @@ def build_nfa(tokens):
                 frag = f
             else:
                 frag = concat(frag, f)
+        
+        
         # empty pattern (shouldn't happen given constraints, but for safety)
         if frag is None:
             s = new_state(); e = new_state()
@@ -112,19 +185,20 @@ def build_nfa(tokens):
     start, accept = build_frag(tokens)
     N = next_state
     eps_list = [[] for _ in range(N)]
+    
     for u, outs in eps.items():
         eps_list[u] = outs
     trans_list = [[] for _ in range(N)]
+    
+    
+    
     for u, outs in trans.items():
         trans_list[u] = outs
 
     return eps_list, trans_list, start, accept, N
 
 def compute_closure(eps_list, N):
-    """
-    For each state u, compute the ε-closure as a list.
-    closure[u] = all states reachable from u by ε-moves.
-    """
+    
     closure = [None]*N
     for u in range(N):
         vis = [False]*N
@@ -142,7 +216,7 @@ def compute_closure(eps_list, N):
 def solve():
     input = sys.stdin.readline
     t = int(input())
-    NEG_INF = -10**9
+    
 
     for _ in range(t):
         n = int(input().strip())
@@ -154,12 +228,12 @@ def solve():
         tokens = parse_pattern(p)
         # 2) Build NFA
         eps_list, trans_list, start, accept, N = build_nfa(tokens)
-        # 3) Precompute ε-closures
+        # 3) Precompute e-closures
         closure = compute_closure(eps_list, N)
 
         # 4) DP over the string s
         dp = [NEG_INF]*N
-        # initialize: can be at any state in ε-closure(start) with length 0
+        # initialize: can be at any state in e-closure(start) with length 0
         for u in closure[start]:
             dp[u] = 0
 
@@ -177,11 +251,15 @@ def solve():
                 for v, cond in trans_list[u]:
                     if ch in cond:
                         nv = v0 + 1
-                        # enter ε-closure(v)
+                        
+                        
+                        # enter e-closure(v)
                         for w in closure[v]:
                             if nv > dp_next[w]:
                                 dp_next[w] = nv
-            # now ε-close dp_next itself
+            
+            
+            # now e-close dp_next itself
             for u in range(N):
                 if dp_next[u] < 0:
                     continue
@@ -192,7 +270,7 @@ def solve():
 
             dp = dp_next
 
-        # 5) Answer is max over ε-closure(accept)
+        # 5) Answer is max over e-closure(accept)
         ans = max(dp[u] for u in closure[accept])
         print(ans if ans >= 0 else -1)
 
