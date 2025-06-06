@@ -1,4 +1,4 @@
-def find_special_step():
+def main():
     n = int(input().strip())
     a = [int(input().strip()) for _ in range(n)]
 
@@ -35,4 +35,4 @@ def find_special_step():
             return
 
 if __name__ == "__main__":
-    find_special_step()
+    main()
